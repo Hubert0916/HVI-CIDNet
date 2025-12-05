@@ -9,7 +9,8 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
     def __init__(self, 
                  channels=[36, 36, 72, 144],
                  heads=[1, 2, 4, 8],
-                 norm=False
+                 norm=False,
+                 activation='softsign'
         ):
         super(CIDNet, self).__init__()
         
@@ -52,19 +53,19 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
             nn.Conv2d(ch1, 1, 3, stride=1, padding=0,bias=False),
             )
         
-        self.HV_LCA1 = HV_LCA(ch2, head2)
-        self.HV_LCA2 = HV_LCA(ch3, head3)
-        self.HV_LCA3 = HV_LCA(ch4, head4)
-        self.HV_LCA4 = HV_LCA(ch4, head4)
-        self.HV_LCA5 = HV_LCA(ch3, head3)
-        self.HV_LCA6 = HV_LCA(ch2, head2)
+        self.HV_LCA1 = HV_LCA(ch2, head2, activation=activation)
+        self.HV_LCA2 = HV_LCA(ch3, head3, activation=activation)
+        self.HV_LCA3 = HV_LCA(ch4, head4, activation=activation)
+        self.HV_LCA4 = HV_LCA(ch4, head4, activation=activation)
+        self.HV_LCA5 = HV_LCA(ch3, head3, activation=activation)
+        self.HV_LCA6 = HV_LCA(ch2, head2, activation=activation)
         
-        self.I_LCA1 = I_LCA(ch2, head2)
-        self.I_LCA2 = I_LCA(ch3, head3)
-        self.I_LCA3 = I_LCA(ch4, head4)
-        self.I_LCA4 = I_LCA(ch4, head4)
-        self.I_LCA5 = I_LCA(ch3, head3)
-        self.I_LCA6 = I_LCA(ch2, head2)
+        self.I_LCA1 = I_LCA(ch2, head2, activation=activation)
+        self.I_LCA2 = I_LCA(ch3, head3, activation=activation)
+        self.I_LCA3 = I_LCA(ch4, head4, activation=activation)
+        self.I_LCA4 = I_LCA(ch4, head4, activation=activation)
+        self.I_LCA5 = I_LCA(ch3, head3, activation=activation)
+        self.I_LCA6 = I_LCA(ch2, head2, activation=activation)
         
         self.trans = RGB_HVI()
         
@@ -124,6 +125,4 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
     def HVIT(self,x):
         hvi = self.trans.HVIT(x)
         return hvi
-    
-    
 

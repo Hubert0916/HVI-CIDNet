@@ -43,7 +43,7 @@ class CAB(nn.Module):
 
 # Intensity Enhancement Layer
 class IEL(nn.Module):
-    def __init__(self, dim, ffn_expansion_factor=2.66, bias=False):
+    def __init__(self, dim, ffn_expansion_factor=2.66, bias=False, activation='softsign'):
         super(IEL, self).__init__()
 
         hidden_features = int(dim*ffn_expansion_factor)
@@ -56,12 +56,18 @@ class IEL(nn.Module):
        
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
-        self.softsign = nn.Softsign()
+        if activation == 'tanh':
+            self.act = nn.Tanh()
+        elif activation == 'softsign':
+            self.act = nn.Softsign()
+        else:
+            raise NotImplementedError
+            
     def forward(self, x):
         x = self.project_in(x)
         x1, x2 = self.dwconv(x).chunk(2, dim=1)
-        x1 = self.softsign(self.dwconv1(x1)) + x1
-        x2 = self.softsign(self.dwconv2(x2)) + x2
+        x1 = self.act(self.dwconv1(x1)) + x1
+        x2 = self.act(self.dwconv2(x2)) + x2
         x = x1 * x2
         x = self.project_out(x)
         return x
@@ -69,9 +75,9 @@ class IEL(nn.Module):
   
 # Lightweight Cross Attention
 class HV_LCA(nn.Module):
-    def __init__(self, dim,num_heads, bias=False):
+    def __init__(self, dim,num_heads, bias=False, activation='softsign'):
         super(HV_LCA, self).__init__()
-        self.gdfn = IEL(dim) # IEL and CDL have same structure
+        self.gdfn = IEL(dim, activation=activation) # IEL and CDL have same structure
         self.norm = LayerNorm(dim)
         self.ffn = CAB(dim, num_heads, bias)
         
@@ -81,13 +87,14 @@ class HV_LCA(nn.Module):
         return x
     
 class I_LCA(nn.Module):
-    def __init__(self, dim,num_heads, bias=False):
+    def __init__(self, dim,num_heads, bias=False, activation='softsign'):
         super(I_LCA, self).__init__()
         self.norm = LayerNorm(dim)
-        self.gdfn = IEL(dim)
+        self.gdfn = IEL(dim, activation=activation)
         self.ffn = CAB(dim, num_heads, bias=bias)
         
     def forward(self, x, y):
         x = x + self.ffn(self.norm(x),self.norm(y))
         x = x + self.gdfn(self.norm(x)) 
         return x
+

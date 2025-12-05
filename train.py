@@ -141,7 +141,7 @@ def load_datasets():
 
 def build_model():
     print('===> Building model ')
-    model = CIDNet().cuda()
+    model = CIDNet(activation=opt.activation).cuda()
     if opt.start_epoch > 0:
         pth = f"./weights/train/epoch_{opt.start_epoch}.pth"
         model.load_state_dict(torch.load(pth, map_location=lambda storage, loc: storage))

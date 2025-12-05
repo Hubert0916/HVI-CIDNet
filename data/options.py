@@ -88,5 +88,9 @@ def option():
              'SICE_grad',
              'fivek'],
     help='Select the dataset to train on (default: %(default)s)')
+    
+    # model options
+    parser.add_argument('--activation', type=str, default='softsign', choices=['tanh', 'softsign'], help='activation function for IEL module')
 
     return parser
+
