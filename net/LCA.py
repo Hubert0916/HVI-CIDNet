@@ -56,12 +56,12 @@ class IEL(nn.Module):
        
         self.project_out = nn.Conv2d(hidden_features, dim, kernel_size=1, bias=bias)
 
-        self.Tanh = nn.Tanh()
+        self.softsign = nn.Softsign()
     def forward(self, x):
         x = self.project_in(x)
         x1, x2 = self.dwconv(x).chunk(2, dim=1)
-        x1 = self.Tanh(self.dwconv1(x1)) + x1
-        x2 = self.Tanh(self.dwconv2(x2)) + x2
+        x1 = self.softsign(self.dwconv1(x1)) + x1
+        x2 = self.softsign(self.dwconv2(x2)) + x2
         x = x1 * x2
         x = self.project_out(x)
         return x
