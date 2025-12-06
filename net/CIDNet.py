@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from net.HVI_transform import RGB_HVI
+from net.k_map_net import KmapGenerator
 from net.transformer_utils import *
 from net.LCA import *
 from huggingface_hub import PyTorchModelHubMixin
@@ -68,10 +69,12 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
         self.I_LCA6 = I_LCA(ch2, head2, activation=activation)
         
         self.trans = RGB_HVI()
+        self.kmap_generator = KmapGenerator()
         
     def forward(self, x):
         dtypes = x.dtype
-        hvi = self.trans.HVIT(x)
+        k_map = self.kmap_generator(x)
+        hvi = self.trans.HVIT(x, k_map)
         i = hvi[:,2,:,:].unsqueeze(1).to(dtypes)
         # low
         i_enc0 = self.IE_block0(i)
@@ -118,11 +121,13 @@ class CIDNet(nn.Module, PyTorchModelHubMixin):
         hv_0 = self.HVD_block0(hv_1)
         
         output_hvi = torch.cat([hv_0, i_dec0], dim=1) + hvi
-        output_rgb = self.trans.PHVIT(output_hvi)
+        output_rgb = self.trans.PHVIT(output_hvi, k_map)
 
         return output_rgb
     
-    def HVIT(self,x):
-        hvi = self.trans.HVIT(x)
+    def HVIT(self, x, k_map=None):
+        if k_map is None:
+            k_map = self.kmap_generator(x)
+        hvi = self.trans.HVIT(x, k_map)
         return hvi
 

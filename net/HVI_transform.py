@@ -6,14 +6,12 @@ pi = 3.141592653589793
 class RGB_HVI(nn.Module):
     def __init__(self):
         super(RGB_HVI, self).__init__()
-        self.density_k = torch.nn.Parameter(torch.full([1],0.2)) # k is reciprocal to the paper mentioned
         self.gated = False
         self.gated2= False
         self.alpha = 1.0
         self.alpha_s = 1.3
-        self.this_k = 0
         
-    def HVIT(self, img):
+    def HVIT(self, img, k_map):
         eps = 1e-8
         device = img.device
         dtypes = img.dtype
@@ -34,10 +32,7 @@ class RGB_HVI(nn.Module):
         saturation = saturation.unsqueeze(1)
         value = value.unsqueeze(1)
         
-        k = self.density_k
-        self.this_k = k.item()
-        
-        color_sensitive = ((value * 0.5 * pi).sin() + eps).pow(k)
+        color_sensitive = ((value * 0.5 * pi).sin() + eps).pow(k_map)
         ch = (2.0 * pi * hue).cos()
         cv = (2.0 * pi * hue).sin()
         H = color_sensitive * saturation * ch
@@ -46,7 +41,7 @@ class RGB_HVI(nn.Module):
         xyz = torch.cat([H, V, I],dim=1)
         return xyz
     
-    def PHVIT(self, img):
+    def PHVIT(self, img, k_map):
         eps = 1e-8
         H,V,I = img[:,0,:,:],img[:,1,:,:],img[:,2,:,:]
         
@@ -55,11 +50,10 @@ class RGB_HVI(nn.Module):
         V = torch.clamp(V,-1,1)
         I = torch.clamp(I,0,1)
         
-        v = I
-        k = self.this_k
-        color_sensitive = ((v * 0.5 * pi).sin() + eps).pow(k)
-        H = (H) / (color_sensitive + eps)
-        V = (V) / (color_sensitive + eps)
+        v = I.unsqueeze(1)
+        color_sensitive = ((v * 0.5 * pi).sin() + eps).pow(k_map)
+        H = (H) / (color_sensitive.squeeze(1) + eps)
+        V = (V) / (color_sensitive.squeeze(1) + eps)
         H = torch.clamp(H,-1,1)
         V = torch.clamp(V,-1,1)
         h = torch.atan2(V + eps,H + eps) / (2*pi)
@@ -70,6 +64,7 @@ class RGB_HVI(nn.Module):
             s = s * self.alpha_s
         
         s = torch.clamp(s,0,1)
+        v = v.squeeze(1)
         v = torch.clamp(v,0,1)
         
         r = torch.zeros_like(h)
